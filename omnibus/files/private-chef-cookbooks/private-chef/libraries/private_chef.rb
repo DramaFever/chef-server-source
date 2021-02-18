@@ -26,7 +26,7 @@ require_relative './warnings.rb'
 module PrivateChef
   extend(Mixlib::Config)
 
-  # options are 'standalone', 'manual', 'ha', and 'tier'
+  # options are 'standalone', 'manual', 'tier'
   topology 'standalone'
 
   # options are 'ipv4' 'ipv6'
@@ -39,14 +39,7 @@ module PrivateChef
   chef_backend_members []
 
   addons Mash.new
-  rabbitmq Mash.new
-  external_rabbitmq Mash.new
-  rabbitmq['log_rotation'] ||= Mash.new
-  opscode_solr4 Mash.new
-  opscode_solr4['log_rotation'] ||= Mash.new
   elasticsearch Mash.new
-  opscode_expander Mash.new
-  opscode_expander['log_rotation'] ||= Mash.new
   opscode_erchef Mash.new
   opscode_erchef['log_rotation'] ||= Mash.new
   oc_chef_authz Mash.new
@@ -69,7 +62,6 @@ module PrivateChef
   bookshelf Mash.new
   bookshelf['log_rotation'] ||= Mash.new
   bootstrap Mash.new
-  drbd Mash.new # For DRBD specific settings
   estatsd Mash.new
   nginx Mash.new
   nginx['log_rotation'] ||= Mash.new
@@ -86,7 +78,6 @@ module PrivateChef
 
   servers Mash.new
   backend_vips Mash.new
-  ha Mash.new # For all other HA settings
   api_fqdn nil
   node nil
 
@@ -97,8 +88,6 @@ module PrivateChef
   fips nil
 
   ldap Mash.new
-  disabled_plugins []
-  enabled_plugins []
 
   backup Mash.new
   backup['strategy'] = 'tar'
@@ -116,8 +105,20 @@ module PrivateChef
   opscode_account Mash.new
   opscode_org_creator Mash.new
   opscode_certificate Mash.new
-
+  disabled_plugins []
+  enabled_plugins []
+  rabbitmq Mash.new
+  rabbitmq['log_rotation'] ||= Mash.new
+  external_rabbitmq Mash.new
   registered_extensions Mash.new
+  ha Mash.new # For all other HA settings
+  drbd Mash.new # For DRBD specific settings
+  deprecated_solr_indexing false
+  opscode_expander Mash.new
+  opscode_expander['log_rotation'] ||= Mash.new
+  opscode_solr4 Mash.new
+  opscode_solr4['log_rotation'] ||= Mash.new
+  # - end legacy config mashed -
 
   insecure_addon_compat true
 
@@ -163,27 +164,6 @@ module PrivateChef
       end
     end
 
-    VALID_EXTENSION_CONFIGS = %i(server_config_required config_values gen_backend gen_frontend gen_secrets gen_api_fqdn).freeze unless defined?(VALID_EXTENSION_CONFIGS)
-    def register_extension(name, extension)
-      bad_keys = extension.keys - VALID_EXTENSION_CONFIGS
-
-      bad_keys.each do |key|
-        Chef::Log.warn("Extension #{name} contains unknown configuration option: #{key}")
-        extension.delete(key) # delete mutates extension
-      end
-
-      PrivateChef['registered_extensions'][name] = extension
-      if extension.key?(:config_values)
-        extension[:config_values].each do |k, v|
-          # TODO(ssd): Should we even allow this? Perhaps we should just exit?
-          if PrivateChef.key?(k)
-            Chef::Log.warn("Extension #{name} attempted to register configuration default for #{k}, but it already exists!")
-          end
-          PrivateChef[k] = v
-        end
-      end
-    end
-
     def server(name = nil, opts = {})
       if name
         PrivateChef['servers'] ||= Mash.new
@@ -223,11 +203,11 @@ module PrivateChef
         'opscode_chef',
         'redis_lb',
         'addons',
-        'rabbitmq',
-        'external_rabbitmq',
+        # ospcode_solr4 required to continue to support old-style
+        # external Elasticsearch configuration using the opscode_solr4
+        # configuration keys.
         'opscode_solr4',
         'elasticsearch',
-        'opscode_expander',
         'opscode_erchef',
         'oc_chef_authz',
         'folsom_graphite',
@@ -240,17 +220,13 @@ module PrivateChef
         'opscode_chef_mover',
         'bookshelf',
         'bootstrap',
-        'drbd',
         'estatsd',
         'nginx',
         'ldap',
         'user',
-        'ha',
         'haproxy',
         'use_chef_backend',
         'chef_backend_members',
-        'disabled_plugins',
-        'enabled_plugins',
         'license',
         'backup',
         'data_collector',
@@ -260,7 +236,7 @@ module PrivateChef
         'couchdb',
         'opscode_solr']
 
-      (default_keys | keys_from_extensions).each do |key|
+      default_keys.each do |key|
         # @todo: Just pick a naming convention and adhere to it
         # consistently
         rkey = if key =~ /^oc_/ || %w(
@@ -299,19 +275,6 @@ module PrivateChef
     end
 
     #
-    # Returns an array of the configuration keys added by registered
-    # extensions. These keys should be rendered to the final
-    # configuration
-    #
-    def keys_from_extensions
-      PrivateChef['registered_extensions'].map do |_name, ext|
-        if ext[:config_values]
-          ext[:config_values].keys.map(&:to_s)
-        end
-      end.flatten.compact
-    end
-
-    #
     # Genereric gen_ callbacks
     #
     # - gen_frontend: Run on all frontend nodes
@@ -325,65 +288,12 @@ module PrivateChef
     # secret doesn't exist on a non-bootstrap node. Takes the node
     # name.
     #
-    # If a plugin doesn't define a callback for one of these functions
-    # the generic version is used.
     #
-    def gen_frontend
-      callback = callback_for(:gen_frontend)
-      if !callback.nil?
-        instance_exec(&callback)
-      else
-        gen_frontend_default
-      end
-    end
-
-    def gen_backend(bootstrap = false)
-      callback = callback_for(:gen_backend)
-      if !callback.nil?
-        instance_exec(bootstrap, &callback)
-      else
-        gen_backend_default(bootstrap)
-      end
-    end
-
-    def gen_secrets(node_name)
-      callback = callback_for(:gen_secrets)
-      if !callback.nil?
-        instance_exec(node_name, &callback)
-      else
-        gen_secrets_default(node_name)
-      end
-    end
-
-    def gen_api_fqdn
-      callback = callback_for(:gen_api_fqdn)
-      if !callback.nil?
-        instance_exec(&callback)
-      else
-        gen_api_fqdn_default
-      end
-    end
-
-    def callback_for(name)
-      extension = PrivateChef['registered_extensions'][PrivateChef['topology']]
-      if extension
-        extension[name]
-      end
-    end
-
-    #
-    # Default implementation of gen_ callbacks
-    #
-    # Currently these are focused on providing the tier & HA toplogies
-    # but will do less and less as that functionality moves into the
-    # plugin
-    #
-    def gen_backend_default(bootstrap)
+    def gen_backend(bootstrap)
       PrivateChef[:role] = 'backend' # mixlib-config wants a symbol :(
       PrivateChef['bookshelf']['listen'] ||= PrivateChef['default_listen_address']
-      PrivateChef['rabbitmq']['node_ip_address'] ||= PrivateChef['default_listen_address']
       PrivateChef['redis_lb']['listen'] ||= PrivateChef['default_listen_address']
-      PrivateChef['opscode_solr4']['ip_address'] ||= PrivateChef['default_listen_address']
+      PrivateChef['elasticsearch']['listen'] ||= PrivateChef['default_listen_address']
       PrivateChef['postgresql']['listen_address'] ||= '*' # PrivateChef["default_listen_address"]
 
       authaddr = []
@@ -395,17 +305,14 @@ module PrivateChef
       PrivateChef['bootstrap']['enable'] = !!bootstrap
     end
 
-    def gen_frontend_default
+    def gen_frontend
       PrivateChef[:role] = 'frontend'
       PrivateChef['bookshelf']['enable'] ||= false
       PrivateChef['bookshelf']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
-      PrivateChef['rabbitmq']['enable'] ||= false
-      PrivateChef['rabbitmq']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
       PrivateChef['redis_lb']['enable'] ||= false
       PrivateChef['redis_lb']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
-      PrivateChef['opscode_solr4']['enable'] ||= false
-      PrivateChef['opscode_solr4']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
-      PrivateChef['opscode_expander']['enable'] ||= false
+      PrivateChef['elasticsearch']['enable'] ||= false
+      PrivateChef['elasticsearch']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
       PrivateChef['postgresql']['enable'] ||= false
       PrivateChef['postgresql']['vip'] ||= PrivateChef['backend_vips']['ipaddress']
       PrivateChef['lb']['upstream'] ||= Mash.new
@@ -418,7 +325,7 @@ module PrivateChef
       PrivateChef['bootstrap']['enable'] = false
     end
 
-    def gen_api_fqdn_default
+    def gen_api_fqdn
       PrivateChef['lb']['api_fqdn'] ||= PrivateChef['api_fqdn']
       PrivateChef['lb']['web_ui_fqdn'] ||= PrivateChef['api_fqdn']
       PrivateChef['nginx']['server_name'] ||= PrivateChef['api_fqdn']
@@ -434,7 +341,7 @@ module PrivateChef
       @credentials ||= Veil::CredentialCollection::ChefSecretsFile.new(path: secrets_json)
     end
 
-    def gen_secrets_default(_node_name)
+    def gen_secrets(_node_name)
       # TODO
       # Transition from erchef's sql_user/password etc living under 'postgresql'
       # in older versions to 'opscode_erchef' in newer versions
@@ -448,9 +355,6 @@ module PrivateChef
       required_secrets = [
         { group: 'postgresql', name: 'db_superuser_password', length: 100, set_command: 'set-db-superuser-password' },
         { group: 'redis_lb', name: 'password', length: 100 },
-        { group: 'rabbitmq', name: 'password', length: 100 },
-        { group: 'rabbitmq', name: 'management_password', length: 100 },
-        { group: 'drbd', name: 'shared_secret', length: 60 },
         { group: 'opscode_erchef', name: 'sql_password', length: 60 },
         { group: 'opscode_erchef', name: 'sql_ro_password', length: 60 },
         { group: 'opscode_erchef', name: 'stats_password', lendth: 100 },
@@ -478,8 +382,6 @@ module PrivateChef
       required_secrets.each do |secret|
         add_secret(secret)
       end
-
-      generate_rabbit_actions_password
 
       save_credentials_to_config if PrivateChef['insecure_addon_compat']
       credentials.save
@@ -549,31 +451,6 @@ module PrivateChef
         creds.each do |name, value|
           PrivateChef[service][name] ||= value
         end
-      end
-    end
-
-    #
-    # The actions queue can be hosted on an external RabbitMQ instance
-    # managed by analytics. In this case, the user provides the
-    # RabbitMQ information in the external_rabbitmq configuration key.
-    #
-    def generate_rabbit_actions_password
-      if PrivateChef['external_rabbitmq']['enable'] && PrivateChef['external_rabbitmq']['actions_password']
-        warn_if_cred_mismatch(group: 'rabbitmq',
-                              name: 'actions_password',
-                              command_name: 'set-actions-password',
-                              config_value: PrivateChef['external_rabbitmq']['actions_password'],
-                              config_key_desc: "external_rabbitmq['actions_password']")
-
-        # NOTE: This is stored under the rabbitmq (rather than
-        # external_rabbitmq) section so that applications don't need
-        # to know whether they are talking to a local or remote
-        # rabbitmq for the actions queue.
-        credentials.add('rabbitmq', 'actions_password',
-          value: PrivateChef['external_rabbitmq']['actions_password'],
-          frozen: true, force: true)
-      else
-        credentials.add('rabbitmq', 'actions_password', length: 100)
       end
     end
 
@@ -675,9 +552,7 @@ module PrivateChef
 
     # True if the given topology requires per-server config via `server` blocks
     def server_config_required?
-      PrivateChef['topology'] == 'tier' ||
-        (PrivateChef['registered_extensions'][PrivateChef['topology']] &&
-         PrivateChef['registered_extensions'][PrivateChef['topology']][:server_config_required])
+      PrivateChef['topology'] == 'tier'
     end
 
     def assert_server_config(node_name)
@@ -694,8 +569,6 @@ module PrivateChef
     end
 
     def generate_config_for_topology(topology, node_name)
-      # TODO(ssd): This can be cleaned up once the "default"
-      # topologies are also implemented using registered extensions
       case topology
       when 'ha'
         Chef::Log.fatal <<~EOF
@@ -728,15 +601,8 @@ module PrivateChef
       when 'tier'
         gen_redundant(node_name, topology)
       else
-        if PrivateChef['registered_extensions'].key?(topology) && server_config_required?
-          gen_redundant(node_name, topology)
-        elsif PrivateChef['registered_extensions'].key?(topology) && !server_config_required?
-          PrivateChef[:api_fqdn] ||= node_name
-          gen_api_fqdn
-        else
-          Chef::Log.fatal("I do not understand topology #{PrivateChef.topology} - try standalone, manual, ha, or tier.")
-          exit 55
-        end
+        Chef::Log.fatal("I do not understand topology #{PrivateChef.topology} - try standalone, manual, or tier.")
+        exit 55
       end
     end
 
@@ -746,6 +612,24 @@ module PrivateChef
         true
       else
         false
+      end
+    end
+
+    def migrate_solr4_settings
+      # Many users were previously using external Elasticsearch by setting
+      # the `opscode_solr4` configuration keys.  We don't want those
+      # customers to have to update their configuration, so we copy over
+      # opscode_solr4 external configuration if it exists.
+      keys_to_migrate = {
+        "external" => "external",
+        "external_url" => "external_url",
+        "elasticsearch_shard_count" => "shard_count",
+        "elasticsearch_replica_count" => "replica_count"
+      }
+      keys_to_migrate.each do |old, new|
+        if opscode_solr4.key?(old) && !elasticsearch.key?(new)
+          elasticsearch[new] = opscode_solr4[old]
+        end
       end
     end
 
@@ -793,6 +677,7 @@ module PrivateChef
       # Transition Solr memory and JVM settings from OSC11 to Chef 12.
       import_legacy_service_config('opscode_solr', 'opscode_solr4', %w(heap_size new_size java_opts))
       deprecated_postgresql_settings
+      migrate_solr4_settings
       transform_to_consistent_types
 
       PrivateChef['nginx']['enable_ipv6'] ||= PrivateChef['use_ipv6']

@@ -3,14 +3,14 @@ pkg_origin=chef
 pkg_license=('Apache-2.0')
 pkg_maintainer="The Chef Server Maintainers <support@chef.io>"
 pkg_deps=(
-  core/erlang20
+  core/erlang22
   core/cacerts
   core/coreutils
   core/curl
   core/gcc-libs
   core/sqitch_pg
 )
-pkg_build_deps=(core/make core/git core/gcc core/bundler core/ruby)
+pkg_build_deps=(core/make core/git core/gcc)
 pkg_bin_dirs=(bin)
 pkg_description="Erlang implementation of the Chef Server's Auth system."
 pkg_upstream_url="https://github.com/chef/chef-server"
@@ -63,10 +63,7 @@ do_prepare() {
 
 
 do_build() {
-  _bundler_dir="$(pkg_path_for bundler)"
   export REL_VERSION=$pkg_version
-  export GEM_HOME="${pkg_path}/vendor/bundle"
-  export GEM_PATH="${_bundler_dir}:${GEM_HOME}"
   make omnibus
 }
 

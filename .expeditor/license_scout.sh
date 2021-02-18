@@ -2,7 +2,7 @@
 
 set -eou pipefail
 
-if [[ "${EXPEDITOR:-false}" == "true" ]]; then
+if [[ "${BUILDKITE:-false}" == "true" ]]; then
   # TODO(ssd) 2019-12-13: packages.microsoft.com periodically fails with
   # an error such as:
   #
@@ -28,7 +28,6 @@ fi
 bundle_install_dirs=(
   chef-server-ctl
   oc-id
-  opscode-expander
 )
 
 for dir in "${bundle_install_dirs[@]}"; do

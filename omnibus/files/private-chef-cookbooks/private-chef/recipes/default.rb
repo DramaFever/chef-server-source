@@ -46,15 +46,7 @@ directory '/etc/opscode/logrotate.d' do
   action :nothing
 end.run_action(:create)
 
-include_recipe 'private-chef::plugin_discovery'
-include_recipe 'private-chef::plugin_config_extensions'
 include_recipe 'private-chef::config'
-
-if node['private_chef']['elasticsearch']['first_internal_install']
-  node.override['private_chef']['opscode-solr4']['enable'] = false
-  node.override['private_chef']['rabbitmq']['enable'] = false
-  node.override['private_chef']['opscode-expander']['enable'] = false
-end
 
 if node['private_chef']['fips_enabled']
   include_recipe 'private-chef::fips'
@@ -118,10 +110,11 @@ end
 
 include_recipe 'enterprise::runit'
 include_recipe 'private-chef::sysctl-updates'
-# Run plugins first, mostly for ha
-include_recipe 'private-chef::plugin_chef_run'
 
 if node['private_chef']['use_chef_backend']
+  # Ensure internal elasticsearch is not enabled
+  # if we are in the chef_backend configuration
+  node.override['private-chef']['elasticsearch']['enable'] = false
   include_recipe 'private-chef::haproxy'
 end
 
@@ -133,12 +126,9 @@ include_recipe 'private-chef::fix_permissions'
   oc_bifrost
   oc_id
   elasticsearch
-  opscode-solr4
-  opscode-expander
   bookshelf
   opscode-erchef
   nginx
-  rabbitmq
   bootstrap
   opscode-chef-mover
   redis_lb
@@ -150,10 +140,10 @@ include_recipe 'private-chef::fix_permissions'
     rescue Chef::Exceptions::RecipeNotFound
       raise "#{service} has the 'external' attribute set true, but does not currently support being run externally."
     end
-    # Disable the actual local service since what is enabled
-    # is an externally managed version. Given that bootstrap and
-    # opscode-expander are not externalizable, don't need special
-    # handling for them as we do in the normal disable case below.
+    # Disable the actual local service since what is enabled is an
+    # externally managed version. Given that bootstrap isn't
+    # externalizable, we don't need special handling for it as we do
+    # in the normal disable case below.
     component_runit_service service do
       action :disable
     end
@@ -173,12 +163,7 @@ include_recipe 'private-chef::fix_permissions'
 end
 
 include_recipe 'private-chef::cleanup'
-
-if darklaunch_values['actions'] && node['private_chef']['insecure_addon_compat']
-  include_recipe 'private-chef::actions'
-else
-  include_recipe 'private-chef::remove_actions'
-end
+include_recipe 'private-chef::remove_actions'
 
 include_recipe 'private-chef::private-chef-sh'
 include_recipe 'private-chef::oc-chef-pedant'

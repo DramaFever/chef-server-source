@@ -1,6 +1,14 @@
 # Chef Infra Server Project - Integration Test Pipeline
 
-The [Buildkite Integration Test Pipeline](https://buildkite.com/chef/chef-chef-server-master-integration-test) provides a convenient way to run the Terraform test scenarios against the full matrix of supported distributions.
+The [Buildkite Integration Test
+Pipeline](https://buildkite.com/chef/chef-chef-server-master-integration-test)
+provides a convenient way to run the Terraform test scenarios against
+a useful subset of our testing matrix.
+
+For a broader suite of tests, the [Buildkite Integration Full Test
+Pipeline](https://buildkite.com/chef/chef-chef-server-master-integration-test-full)
+provides a convenient way to run the Terraform test scenarios against
+the full matrix of supported distributions and configurations.
 
 ## Running the Pipeline
 
@@ -24,7 +32,7 @@ Environment variables are used to control how the scenarios are executed and all
 |-----------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------|
 | `INSTALL_VERSION` | The version number of the artifact you want to install first. | e.g. 12.19.31 |
 | `UPGRADE_VERSION` | The version number of the artifact you want to upgrade to. | e.g. 13.1.58+20200303212531 |
-| `ELASTIC_VERSION` | Version of Elasticsearch to install. | 2 or 5 with 6 being the default |
+| `ELASTIC_VERSION` | Version of Elasticsearch to install. | 2, 5, 6, or 7 with 6 being the default |
 | `ENABLE_SMOKE_TEST` | Enable Chef Infra Server smoke test. | true (default) |
 | `ENABLE_PEDANT_TEST` | Enable full Chef Infra Server pedant test. | true (default) |
 | `ENABLE_PSQL_TEST` | Enable testing of Chef Infra Server PostgreSQL database. | true (default) |
@@ -50,7 +58,7 @@ Once a pipeline step has completed (success or fail) the log from the scenario r
 
 ## Cleaning Up Orphaned Instances
 
-In some pipeline runs you may end up with orphaned instances which will need to be cleaned up manually.  If you have access to the `chef-cd` account you can log into the AWS EC2 web interface and find the instances (and their associated security groups) by looking for AWS resources with the prefix matching the Buildkite pipeline build number (e.g. `35`). 
+In some pipeline runs you may end up with orphaned instances which will need to be cleaned up manually.  If you have access to the `chef-cd` account you can log into the AWS EC2 web interface and find the instances (and their associated security groups) by looking for AWS resources with the prefix matching the Buildkite pipeline build number (e.g. `35`).
 
 If you have CLI access to the `chef-cd` AWS account you can use the `.expeditor/integration_test.pipeline.sh` script to perform the cleanup automatically by executing it like this:
 

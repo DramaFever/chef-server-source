@@ -26,6 +26,9 @@ describe "running configs required by Reporting", :config do
     it "postgresql/data_dir" do
       if config['postgresql']['external']
         skip "not used for external postgresql"
+      # These tests should not run on the frontend of a tier setup.
+      elsif (Pedant::Config.topology == "tier" && Pedant::Config.role == "frontend")
+        skip "no postgresql installed on frontend of a tier install"
       else
         expect(File.exists?(config['postgresql']['data_dir'])).to be true
       end
@@ -33,17 +36,6 @@ describe "running configs required by Reporting", :config do
 
     it "postgresql/username" do
       expect(config['postgresql']['username'].to_s).to_not eq ''
-    end
-  end
-
-  context "rabbitmq" do
-
-    it "user/username" do
-      expect(config['user']['username'].to_s).to_not eq ''
-    end
-
-    it "rabbitmq/actions_vhost" do
-      expect(config['rabbitmq']['actions_vhost'].to_s).to_not eq ''
     end
   end
 

@@ -64,7 +64,7 @@ default['private_chef']['sysvinit_id'] = 'SV'
 default['private_chef']['addons']['install'] = false
 default['private_chef']['addons']['path'] = nil
 default['private_chef']['addons']['packages'] =
-  %w(opscode-reporting opscode-manage opscode-analytics opscode-push-jobs-server chef-ha)
+  %w(opscode-reporting opscode-manage opscode-push-jobs-server)
 default['private_chef']['addons']['ubuntu_supported_codenames'] =
   %w(lucid precise trusty)
 default['private_chef']['addons']['ubuntu_distribution'] =
@@ -94,9 +94,17 @@ default['private_chef']['couchdb']['vip'] = '127.0.0.1'
 default['private_chef']['couchdb']['port'] = 5984
 
 ####
-# Opscode Solr (legacy required for upgrade cleanup to work)
+# Legacy attributes required for cleanup
 ####
 default['private_chef']['opscode-solr']['data_dir'] = '/var/opt/opscode/opscode-solr/data'
+default['private_chef']['rabbitmq']['dir'] = '/var/opt/opscode/rabbitmq'
+default['private_chef']['rabbitmq']['data_dir'] = '/var/opt/opscode/rabbitmq/db'
+default['private_chef']['rabbitmq']['log_directory'] = '/var/log/opscode/rabbitmq'
+default['private_chef']['opscode-solr4']['dir'] = '/var/opt/opscode/opscode-solr4'
+default['private_chef']['opscode-solr4']['data_dir'] = '/var/opt/opscode/opscode-solr4/data'
+default['private_chef']['opscode-solr4']['log_directory'] = '/var/log/opscode/opscode-solr4'
+default['private_chef']['opscode-expander']['dir'] = '/var/opt/opscode/opscode-expander'
+default['private_chef']['opscode-expander']['log_directory'] = '/var/log/opscode/opscode-expander'
 
 ####
 # Server API Version - is not used in server configuration, but rather in the configuration
@@ -114,7 +122,6 @@ default['private_chef']['server-api-version'] = 0
 # the current chef-backend leader.
 ####
 default['private_chef']['haproxy']['enable'] = true
-default['private_chef']['haproxy']['ha'] = false
 default['private_chef']['haproxy']['dir'] = '/var/opt/opscode/haproxy'
 default['private_chef']['haproxy']['log_directory'] = '/var/log/opscode/haproxy'
 default['private_chef']['haproxy']['log_rotation']['file_maxbytes'] = 104857600
@@ -128,156 +135,14 @@ default['private_chef']['haproxy']['leaderl_healthcheck_port'] = 7331
 default['private_chef']['haproxy']['etcd_port'] = 2379
 
 ####
-# RabbitMQ
+# Legacy Solr 4
 ####
-default['private_chef']['rabbitmq']['enable'] = true
-default['private_chef']['rabbitmq']['ha'] = false
-default['private_chef']['rabbitmq']['dir'] = '/var/opt/opscode/rabbitmq'
-default['private_chef']['rabbitmq']['data_dir'] = '/var/opt/opscode/rabbitmq/db'
-default['private_chef']['rabbitmq']['log_directory'] = '/var/log/opscode/rabbitmq'
-default['private_chef']['rabbitmq']['log_rotation']['file_maxbytes'] = 104857600
-default['private_chef']['rabbitmq']['log_rotation']['num_to_keep'] = 10
-default['private_chef']['rabbitmq']['vhost'] = '/chef'
-default['private_chef']['rabbitmq']['user'] = 'chef'
-default['private_chef']['rabbitmq']['actions_user'] = 'actions'
-default['private_chef']['rabbitmq']['actions_vhost'] = '/analytics'
-default['private_chef']['rabbitmq']['actions_exchange'] = 'actions'
-default['private_chef']['rabbitmq']['node_ip_address'] = '127.0.0.1'
-default['private_chef']['rabbitmq']['node_port'] = '5672'
-default['private_chef']['rabbitmq']['nodename'] = 'rabbit@localhost'
-default['private_chef']['rabbitmq']['vip'] = '127.0.0.1'
-default['private_chef']['rabbitmq']['consumer_id'] = 'hotsauce'
-default['private_chef']['rabbitmq']['env_path'] = '/opt/opscode/bin:/opt/opscode/embedded/bin:/usr/bin:/bin'
-default['private_chef']['rabbitmq']['startup_timeout'] = 100
-
-default['private_chef']['rabbitmq']['ssl_versions'] = ['tlsv1.2', 'tlsv1.1']
-
-####
-# RabbitMQ Management Plugin
-####
-default['private_chef']['rabbitmq']['management_user'] = 'rabbitmgmt'
-default['private_chef']['rabbitmq']['management_port'] = 15672
-default['private_chef']['rabbitmq']['management_enabled'] = true
-
-# RabbitMQ max-length policy
-default['private_chef']['rabbitmq']['analytics_max_length'] = 10000
-default['private_chef']['rabbitmq']['queue_length_monitor_vhost'] = '/analytics'
-default['private_chef']['rabbitmq']['queue_length_monitor_queue'] = 'alaska'
-default['private_chef']['rabbitmq']['queue_length_monitor_enabled'] = true
-# does a full queue set overall_status to fail at \_status
-default['private_chef']['rabbitmq']['queue_at_capacity_affects_overall_status'] = false
-
-####
-# RabbitMQ Queue Monitor
-####
-# how often to run the queue monitor
-default['private_chef']['rabbitmq']['queue_length_monitor_millis'] = 30000
-# if the queue monitor is busy and this timeout has been exceeded,
-# assume that rabbit is in a bad state and don't send messages to it
-# 5000 is the default of gen_server:call()
-default['private_chef']['rabbitmq']['queue_length_monitor_timeout_millis'] = 5000
-
-# don't send messages to rabbitmq if it has reached it's configured max_length
-default['private_chef']['rabbitmq']['drop_on_full_capacity'] = true
-
-# prevent erchef from starting if queue is at capacity
-default['private_chef']['rabbitmq']['prevent_erchef_startup_on_full_capacity'] = false
-
-# rabbit_mgmt_service configuration for erchef. These are used to configure an opscoderl_httpc pool
-# of HTTP connecton workers.
-default['private_chef']['rabbitmq']['rabbit_mgmt_timeout'] = 30000
-default['private_chef']['rabbitmq']['rabbit_mgmt_http_init_count'] = 25
-default['private_chef']['rabbitmq']['rabbit_mgmt_http_max_count'] = 100
-# cull interval specified in seconds
-default['private_chef']['rabbitmq']['rabbit_mgmt_http_cull_interval'] = 60
-# max age specified in seconds
-default['private_chef']['rabbitmq']['rabbit_mgmt_http_max_age'] = 70
-# max connection duration specified in seconds
-default['private_chef']['rabbitmq']['rabbit_mgmt_http_max_connection_duration'] = 70
-
-# comma sep list of tuples, without surrounding []'s
-# rendered as a list in oc_erchef.config.erb, including basic_auth info
-default['private_chef']['rabbitmq']['rabbit_mgmt_ibrowse_options'] = '{connect_timeout, 10000}'
-
-####
-# External RabbitMQ
 #
-# When enabled, the "external-rabbitmq" manages the *actions* queue.
-# The expander queue is still on the local expander installation. This
-# option is used for Analytics installations which host their own
-# rabbitmq queue.
-#
-####
-default['private_chef']['external-rabbitmq']['enable'] = false
-default['private_chef']['external-rabbitmq']['actions_user'] = 'actions'
-default['private_chef']['external-rabbitmq']['actions_vhost'] = '/analytics'
-default['private_chef']['external-rabbitmq']['actions_exchange'] = 'actions'
-default['private_chef']['external-rabbitmq']['node_port'] = '5672'
-default['private_chef']['external-rabbitmq']['vip'] = '127.0.0.1'
-
-####
-# Jetty dummy for logs
-####
-# Should always be enable = false, we control Jetty+Solr through opscode-solr4
-default['private_chef']['jetty']['enable'] = false
-default['private_chef']['jetty']['ha'] = false
-default['private_chef']['jetty']['log_directory'] = '/var/opt/opscode/opscode-solr4/jetty/logs'
-
-####
-# Chef Solr 4
-####
-default['private_chef']['opscode-solr4']['enable'] = true
-#
-# Set this to point at a solr/cloudsearch installation
-# not controlled by chef-server
-#
+# These options are still accepted in the hopes of expanding
+# compatibility with old configuration files.
 default['private_chef']['opscode-solr4']['external'] = false
 default['private_chef']['opscode-solr4']['external_url'] = nil
-default['private_chef']['opscode-solr4']['ha'] = false
-default['private_chef']['opscode-solr4']['dir'] = '/var/opt/opscode/opscode-solr4'
-default['private_chef']['opscode-solr4']['data_dir'] = '/var/opt/opscode/opscode-solr4/data'
-default['private_chef']['opscode-solr4']['temp_directory'] = '/var/opt/opscode/opscode-solr4/'
-default['private_chef']['opscode-solr4']['log_directory'] = '/var/log/opscode/opscode-solr4'
-default['private_chef']['opscode-solr4']['log_rotation']['file_maxbytes'] = 104857600
-default['private_chef']['opscode-solr4']['log_rotation']['num_to_keep'] = 10
-default['private_chef']['opscode-solr4']['log_gc'] = true
-# defaults for heap size and new generation size are computed in the chef-solr
-# recipe based on node memory
 default['private_chef']['opscode-solr4']['heap_size'] = nil
-default['private_chef']['opscode-solr4']['new_size'] = nil
-default['private_chef']['opscode-solr4']['java_opts'] = ''
-default['private_chef']['opscode-solr4']['url'] = 'http://localhost:8983/solr'
-default['private_chef']['opscode-solr4']['ip_address'] = '127.0.0.1'
-default['private_chef']['opscode-solr4']['vip'] = '127.0.0.1'
-default['private_chef']['opscode-solr4']['port'] = 8983
-default['private_chef']['opscode-solr4']['ram_buffer_size'] = 100
-default['private_chef']['opscode-solr4']['merge_factor'] = 15
-default['private_chef']['opscode-solr4']['max_merge_docs'] = 2147483647
-default['private_chef']['opscode-solr4']['max_field_length'] = 100000
-default['private_chef']['opscode-solr4']['max_commit_docs'] = 1000
-default['private_chef']['opscode-solr4']['auto_soft_commit'] = 1000
-default['private_chef']['opscode-solr4']['commit_interval'] = 60000 # in ms
-default['private_chef']['opscode-solr4']['poll_seconds'] = 20 # slave -> master poll interval in seconds, max of 60 (see solrconfig.xml.erb)
-# By default we only allow the /admin/ping API (for health checking).
-# To enable the rest of the admin API, set the enable_full_admin_api
-# to true.
-default['private_chef']['opscode-solr4']['enable_full_admin_api'] = false
-default['private_chef']['opscode-solr4']['elasticsearch_shard_count'] = 5
-default['private_chef']['opscode-solr4']['elasticsearch_replica_count'] = 1
-
-####
-# Chef Expander
-####
-default['private_chef']['opscode-expander']['enable'] = true
-default['private_chef']['opscode-expander']['ha'] = false
-default['private_chef']['opscode-expander']['dir'] = '/var/opt/opscode/opscode-expander'
-default['private_chef']['opscode-expander']['log_directory'] = '/var/log/opscode/opscode-expander'
-default['private_chef']['opscode-expander']['log_rotation']['file_maxbytes'] = 104857600
-default['private_chef']['opscode-expander']['log_rotation']['num_to_keep'] = 10
-default['private_chef']['opscode-expander']['consumer_id'] = 'default'
-default['private_chef']['opscode-expander']['nodes'] = 2
-default['private_chef']['opscode-expander']['max_retries'] = 1
-default['private_chef']['opscode-expander']['retry_wait'] = 1
 
 ####
 # Elasticsearch
@@ -285,13 +150,14 @@ default['private_chef']['opscode-expander']['retry_wait'] = 1
 var_base = '/var/opt/opscode'
 log_base = '/var/log/opscode'
 
-default['private_chef']['elasticsearch']['enable'] = false
-default['private_chef']['elasticsearch']['first_internal_install'] = false
 elasticsearch = default['private_chef']['elasticsearch']
 
 # These attributes cannot be overridden in chef-server.rb
 # elasticsearch['tunable_blacklist'] = %w{dir data_dir try_start}
 # elasticsearch['try_start'] = true
+elasticsearch['enable'] = true
+# elasticsearch['external'] = nil
+# elasticsearch['external_url'] = nil
 elasticsearch['dir'] = "#{var_base}/elasticsearch"
 elasticsearch['data_dir'] = "#{var_base}/elasticsearch/data"
 elasticsearch['plugins_directory'] = "#{var_base}/elasticsearch/plugins"
@@ -300,9 +166,13 @@ elasticsearch['temp_directory'] = "#{var_base}/elasticsearch/tmp"
 elasticsearch['log_directory'] = "#{log_base}/elasticsearch"
 elasticsearch['log_rotation']['file_maxbytes'] = 104857600
 elasticsearch['log_rotation']['num_to_keep'] = 10
+elasticsearch['vip'] = '127.0.0.1'
+elasticsearch['listen'] = '127.0.0.1'
 elasticsearch['port'] = 9200
 elasticsearch['enable_gc_log'] = false
 elasticsearch['initial_cluster_join_timeout'] = 90
+elasticsearch['shard_count'] = 5
+elasticsearch['replica_count'] = 1
 
 # each item in this list will be placed as-is into java_opts config file.
 # entries are set in chef-server.rb as
@@ -337,7 +207,7 @@ elasticsearch['jvm_opts'] = []
 # heap address: 0x00000000c0000000, size: 28672 MB, Compressed Oops mode: Zero based, Oop shift amount: 3
 #
 # ... turns up that our limit is around 28G, which is where the max
-# should be set. (TODO)
+# should be set.
 #
 #
 elasticsearch['heap_size'] = Elasticsearch.heap_size_default(node)
@@ -347,7 +217,6 @@ elasticsearch['new_size'] = Elasticsearch.new_size_default(node)
 # Erlang Chef Server API
 ####
 default['private_chef']['opscode-erchef']['enable'] = true
-default['private_chef']['opscode-erchef']['ha'] = false
 default['private_chef']['opscode-erchef']['dir'] = '/var/opt/opscode/opscode-erchef'
 # sets a ulimit on the data memory segment via `chpst`'s `-d` option. Setting
 # to `nil` disables the limit.
@@ -371,11 +240,6 @@ default['private_chef']['opscode-erchef']['enable_request_logging'] = true
 
 #
 # Reindex configurables
-#
-# NOTE: The semantics of reindexing are very different between
-# ElasticSearch and Solr. Solr reindexing is only placing an item on a
-# queue, thus it is unlikely to fail at the erchef level.  Rather, you
-# will want to tune opscode-expander.
 #
 # These configuration items are consulted during reindex requests.
 # Such requests originate from users running chef-server-ctl reindex.
@@ -444,8 +308,8 @@ default['private_chef']['opscode-erchef']['depsolver_timeout'] = 5000
 default['private_chef']['opscode-erchef']['ibrowse_max_sessions'] = 256
 default['private_chef']['opscode-erchef']['ibrowse_max_pipeline_size'] = 1
 # general search settings used to set up chef_index
-default['private_chef']['opscode-erchef']['search_provider'] = 'solr' # solr, elasticsearch
-default['private_chef']['opscode-erchef']['search_queue_mode'] = 'rabbitmq' # rabbitmq, batch, or inline
+default['private_chef']['opscode-erchef']['search_provider'] = 'elasticsearch'
+default['private_chef']['opscode-erchef']['search_queue_mode'] = 'batch'
 default['private_chef']['opscode-erchef']['search_batch_max_size'] = '5000000'
 default['private_chef']['opscode-erchef']['search_batch_max_wait'] = '10'
 # solr_service configuration for erchef. These are used to configure an opscoderl_httpc pool
@@ -456,6 +320,7 @@ default['private_chef']['opscode-erchef']['solr_http_max_count'] = 100
 default['private_chef']['opscode-erchef']['solr_http_cull_interval'] = '{1, min}'
 default['private_chef']['opscode-erchef']['solr_http_max_age'] = '{70, sec}'
 default['private_chef']['opscode-erchef']['solr_http_max_connection_duration'] = '{70,sec}'
+default['private_chef']['opscode-erchef']['solr_retry_on_conn_closed'] = true
 default['private_chef']['opscode-erchef']['solr_ibrowse_options'] = '[{connect_timeout, 10000}]'
 # Default: generate signed URLs based upon Host: header. Override with a url, "http:// ..."
 default['private_chef']['opscode-erchef']['base_resource_url'] = :host_header
@@ -482,6 +347,7 @@ default['private_chef']['opscode-erchef']['ssl_session_caching']['enabled'] = fa
 # the /_status endpoint.
 
 default['private_chef']['opscode-erchef']['health_ping_timeout'] = 400
+default['private_chef']['opscode-erchef']['include_version_in_status'] = false
 
 # Stats endpoint
 default['private_chef']['opscode-erchef']['stats_auth_enable'] = true
@@ -516,7 +382,6 @@ default['private_chef']['oc-chef-pedant']['chef_server'] = nil
 # redis_lb
 ###
 default['private_chef']['redis_lb']['enable'] = true
-default['private_chef']['redis_lb']['ha'] = false
 default['private_chef']['redis_lb']['dir'] = '/var/opt/opscode/redis_lb'
 default['private_chef']['redis_lb']['data_dir'] = '/var/opt/opscode/redis_lb/data'
 default['private_chef']['redis_lb']['log_directory'] = '/var/log/opscode/redis_lb'
@@ -553,7 +418,6 @@ default['private_chef']['lb']['web_ui_fqdn'] = node['fqdn']
 default['private_chef']['lb']['debug'] = false
 default['private_chef']['lb']['upstream']['opscode-erchef'] = [ '127.0.0.1' ]
 default['private_chef']['lb']['upstream']['oc_bifrost'] = [ '127.0.0.1' ]
-default['private_chef']['lb']['upstream']['opscode-solr4'] = [ '127.0.0.1' ]
 default['private_chef']['lb']['upstream']['bookshelf'] = [ '127.0.0.1' ]
 default['private_chef']['lb_internal']['enable'] = true
 default['private_chef']['lb_internal']['vip'] = '127.0.0.1'
@@ -583,12 +447,12 @@ default['private_chef']['lb']['xdl_defaults']['couchdb_associations'] = false
 # Nginx
 ####
 default['private_chef']['nginx']['enable'] = true
-default['private_chef']['nginx']['ha'] = false
 default['private_chef']['nginx']['dir'] = '/var/opt/opscode/nginx'
 default['private_chef']['nginx']['log_directory'] = '/var/log/opscode/nginx'
 default['private_chef']['nginx']['log_rotation']['file_maxbytes'] = 104857600
 default['private_chef']['nginx']['log_rotation']['num_to_keep'] = 10
 default['private_chef']['nginx']['log_x_forwarded_for'] = false
+default['private_chef']['nginx']['time_format'] = 'time_iso8601'
 default['private_chef']['nginx']['ssl_port'] = 443
 default['private_chef']['nginx']['enable_non_ssl'] = false
 default['private_chef']['nginx']['non_ssl_port'] = 80
@@ -651,6 +515,11 @@ default['private_chef']['nginx']['use_implicit_hosts'] = false
 
 default['private_chef']['nginx']['show_welcome_page'] = true
 
+# Set to a path to a CA certificate to enable mutual TLS checking of the client SSL/TLS certificate
+default['private_chef']['nginx']['ssl_client_ca'] = false
+# default['private_chef']['nginx']['ssl_client_ca'] = "/etc/something/foo.ca.pem"
+default['private_chef']['nginx']['ssl_verify_depth'] = 2
+
 ###
 # PostgreSQL
 ###
@@ -663,7 +532,6 @@ default['private_chef']['postgresql']['version'] = '9.6'
 # whether we need to run pg_upgrade.
 default['private_chef']['postgresql']['enable'] = true
 default['private_chef']['postgresql']['external'] = false
-default['private_chef']['postgresql']['ha'] = false
 default['private_chef']['postgresql']['dir'] = "/var/opt/opscode/postgresql/#{node['private_chef']['postgresql']['version']}"
 default['private_chef']['postgresql']['data_dir'] = "/var/opt/opscode/postgresql/#{node['private_chef']['postgresql']['version']}/data"
 default['private_chef']['postgresql']['log_directory'] = "/var/log/opscode/postgresql/#{node['private_chef']['postgresql']['version']}"
@@ -730,7 +598,6 @@ default['private_chef']['postgresql']['pg_upgrade_timeout'] = 7200
 # Bifrost
 ###
 default['private_chef']['oc_bifrost']['enable'] = true
-default['private_chef']['oc_bifrost']['ha'] = false
 default['private_chef']['oc_bifrost']['dir'] = '/var/opt/opscode/oc_bifrost'
 default['private_chef']['oc_bifrost']['log_directory'] = '/var/log/opscode/oc_bifrost'
 default['private_chef']['oc_bifrost']['log_rotation']['file_maxbytes'] = 104857600
@@ -767,13 +634,13 @@ default['private_chef']['oc_chef_authz']['http_queue_max'] = 50
 default['private_chef']['oc_chef_authz']['http_cull_interval'] = '{1, min}'
 default['private_chef']['oc_chef_authz']['http_max_age'] = '{70, sec}'
 default['private_chef']['oc_chef_authz']['http_max_connection_duration'] = '{70, sec}'
+default['private_chef']['oc_chef_authz']['http_retry_on_conn_closed'] = true
 default['private_chef']['oc_chef_authz']['ibrowse_options'] = '[{connect_timeout, 5000}]'
 
 ####
 # Bookshelf
 ####
 default['private_chef']['bookshelf']['enable'] = true
-default['private_chef']['bookshelf']['ha'] = false
 default['private_chef']['bookshelf']['dir'] = '/var/opt/opscode/bookshelf'
 default['private_chef']['bookshelf']['data_dir'] = '/var/opt/opscode/bookshelf/data'
 default['private_chef']['bookshelf']['log_directory'] = '/var/log/opscode/bookshelf'
@@ -814,7 +681,6 @@ default['private_chef']['bookshelf']['enable_request_logging'] = false
 ###
 
 default['private_chef']['oc_id']['enable'] = true
-default['private_chef']['oc_id']['ha'] = false
 default['private_chef']['oc_id']['dir'] = '/var/opt/opscode/oc_id'
 default['private_chef']['oc_id']['log_directory'] = '/var/log/opscode/oc_id'
 default['private_chef']['oc_id']['log_rotation']['file_maxbytes'] = 104857600
@@ -859,14 +725,11 @@ default['private_chef']['dark_launch']['private-chef'] = true
 default['private_chef']['dark_launch']['sql_users'] = true
 default['private_chef']['dark_launch']['add_type_and_bag_to_items'] = true
 default['private_chef']['dark_launch']['reporting'] = true
-# It appears that actions rabbitmq was used for oc_actions and analytics. 
-default['private_chef']['dark_launch']['actions'] = false
 
 ###
 # Chef Mover
 ###
 default['private_chef']['opscode-chef-mover']['enable'] = true
-default['private_chef']['opscode-chef-mover']['ha'] = false
 default['private_chef']['opscode-chef-mover']['dir'] = '/var/opt/opscode/opscode-chef-mover'
 default['private_chef']['opscode-chef-mover']['data_dir'] = '/var/opt/opscode/opscode-chef-mover/data'
 default['private_chef']['opscode-chef-mover']['log_directory'] = '/var/log/opscode/opscode-chef-mover'
@@ -996,6 +859,8 @@ default['private_chef']['data_collector']['http_max_age'] = '{70, sec}'
 default['private_chef']['data_collector']['http_cull_interval'] = '{1, min}'
 # Maximum age of a connection before terminating it.
 default['private_chef']['data_collector']['http_max_connection_duration'] = '{70,sec}'
+# Should the request be retried on a different connection incase of receving a sel_conn_closed
+default['private_chef']['data_collector']['http_retry_on_conn_closed'] = true
 # Options for the ibrowse connections (see ibrowse).
 default['private_chef']['data_collector']['ibrowse_options'] = '[{connect_timeout, 10000}]'
 # Select whether data_collector affects overall status in _status endpoint

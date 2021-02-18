@@ -27,18 +27,6 @@ class OmnibusHelper
     cmd.stdout
   end
 
-  def rabbitmq_configuration
-    external = node['private_chef']['external-rabbitmq']['enable']
-    config = if external
-               node['private_chef']['external-rabbitmq'].to_hash
-             else
-               node['private_chef']['rabbitmq'].to_hash
-             end
-
-    config['actions_password'] = PrivateChef.credentials.get('rabbitmq', 'actions_password')
-    config
-  end
-
   def self.is_ip?(addr)
     IPAddr.new addr
     true
@@ -67,28 +55,18 @@ class OmnibusHelper
     normalize_host(node['private_chef'][service]['vip'])
   end
 
-  # Returns scheme://host:port without any path
-  def solr_root
-    url = URI.parse(solr_url)
-    host = url.scheme + '://' + url.host
-    if url.port
-      host += ':' + url.port.to_s
-    end
-    host
-  end
-
   def elastic_search_major_version
     max_requests = 5
     current_request = 1
 
-    if node['private_chef']['opscode-solr4']['external'] && node['private_chef']['opscode-erchef']['search_provider'] == 'elasticsearch'
+    if node['private_chef']['opscode-erchef']['search_provider'] == 'elasticsearch'
       begin
-        client = Chef::HTTP.new(node['private_chef']['opscode-solr4']['external_url'])
+        client = Chef::HTTP.new(solr_url)
         response = client.get('')
       rescue => e
         # Perform a blind rescue because Net:HTTP throws a variety of exceptions - some of which are platform specific.
         if current_request == max_requests
-          raise "Failed to connect to elasticsearch service. Ensure node['private_chef']['opscode-solr4']['external_url'] is correct.\n#{e}"
+          raise "Failed to connect to elasticsearch service at #{solr_url}: #{e}"
         else
           # Chef HTTP logs the details in the debug log.
           Chef::Log.error "Failed to connect to elasticsearch service #{current_request}/#{max_requests}. Retrying."
@@ -112,17 +90,11 @@ class OmnibusHelper
   end
 
   def es_index_definition
-    if node['private_chef']['elasticsearch']['first_internal_install'] == true
+    es_version = elastic_search_major_version
+    if elastic_search_major_version == 6
       es_6_index
-    else
-      # For external elasticsearch or chef-backend elasticsearch will be running
-      # before we try to create the index
-      es_version = elastic_search_major_version
-      if es_version == 6
-        es_6_index
-      elsif [2, 5].include?(es_version)
-        es_5_or_2_index
-      end
+    elsif [2, 5].include?(es_version)
+      es_5_or_2_index
     end
   end
 
@@ -137,9 +109,9 @@ class OmnibusHelper
           }
         },
         'number_of_shards' =>
-          node['private_chef']['opscode-solr4']['elasticsearch_shard_count'],
+          node['private_chef']['elasticsearch']['shard_count'],
         'number_of_replicas' =>
-          node['private_chef']['opscode-solr4']['elasticsearch_replica_count']
+          node['private_chef']['elasticsearch']['replica_count']
       },
       'mappings' => {
         'object' => {
@@ -190,9 +162,9 @@ class OmnibusHelper
           }
         },
         'number_of_shards' =>
-          node['private_chef']['opscode-solr4']['elasticsearch_shard_count'],
+          node['private_chef']['elasticsearch']['shard_count'],
         'number_of_replicas' =>
-          node['private_chef']['opscode-solr4']['elasticsearch_replica_count']
+          node['private_chef']['elasticsearch']['replica_count']
       },
       'mappings' => {
         'object' => {
@@ -234,12 +206,32 @@ class OmnibusHelper
     }
   end
 
-  def solr_url
-    if node['private_chef']['opscode-solr4']['external']
-      node['private_chef']['opscode-solr4']['external_url']
+  def external_elasticsearch?
+    if node['private_chef']['elasticsearch'].key?('external')
+      node['private_chef']['elasticsearch']['external']
+    elsif node['private_chef']['opscode-solr4'].key?('external')
+      node['private_chef']['opscode-solr4']['external']
     else
-      "http://#{vip_for_uri('opscode-solr4')}:#{node['private_chef']['opscode-solr4']['port']}/solr"
+      false
     end
+  end
+
+  def solr_url
+    if external_elasticsearch?
+      node['private_chef']['elasticsearch']['external_url'] || node['private_chef']['opscode-solr4']['external_url']
+    else
+      "http://#{vip_for_uri('elasticsearch')}:#{node['private_chef']['elasticsearch']['port']}"
+    end
+  end
+
+  # Returns scheme://host:port without any path
+  def solr_root
+    url = URI.parse(solr_url)
+    host = url.scheme + '://' + url.host
+    if url.port
+      host += ':' + url.port.to_s
+    end
+    host
   end
 
   def bookshelf_s3_url
@@ -399,12 +391,12 @@ class OmnibusHelper
       attrs['ldap'] = {}
     end
 
-    # back-compat fixes for opscode-reporting
-    # reporting uses the opscode-solr key for determining the location of the
-    # solr host, so we'll copy the contents over from opscode-solr4
-    attrs['opscode-solr'] ||= {}
-    attrs['opscode-solr']['vip'] = attrs['opscode-solr4']['vip']
-    attrs['opscode-solr']['port'] = attrs['opscode-solr4']['port']
+    # back-compat fixes for opscode-reporting opscode-reporting still
+    # won't work with non-external Elasticsearch until reporting is
+    # updated.
+    attrs['opscode-solr4'] ||= {}
+    attrs['opscode-solr4']['external'] = !!attrs['elasticsearch']['external']
+    attrs['opscode-solr4']['external_url'] = attrs['elasticsearch']['external_url']
 
     content = {
       'private_chef' => attrs,

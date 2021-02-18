@@ -81,6 +81,11 @@ else
     PrivateChef.from_file(chef_server_path)
   end
 
+
+  if PrivateChef['opscode_solr4']['external']
+    node.default['private_chef']['elasticsearch']['enable'] = false
+  end
+
   # Bail out if something is wrong in our configuration.
   # NOTE: Over time, we can move the validation done in private_chef.rb
   #       here as well.

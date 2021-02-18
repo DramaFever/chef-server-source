@@ -3,6 +3,13 @@
 
 MAX_MAP_COUNT = 262_144
 
+cluster_name = if node['previous_run'] && node['previous_run']['elasticsearch'] && node['previous_run']['elasticsearch']['cluster_name']
+                 node['previous_run']['elasticsearch']['cluster_name']
+               else
+                 "ChefInfraServer-#{SecureRandom.hex(4)}"
+               end
+
+node.override['private_chef']['elasticsearch']['cluster_name'] = cluster_name
 elasticsearch = node['private_chef']['elasticsearch']
 
 elasticsearch_dir              = elasticsearch['dir']                   # /var/opt/opscode/elasticsearch
@@ -71,9 +78,6 @@ sysctl 'vm.max_map_count' do
   notifies :run, 'execute[sysctl-reload]', :immediately
 end
 
-cluster_name = "ChefInfraServer-#{SecureRandom.hex(4)}"
-
-# No discovery settings since we will have only one chef-server backend node.
 
 # Remove the old env config to ensre it's not left over after an upgrade.
 directory '/opt/opscode/service/elasticsearch/env' do
@@ -85,7 +89,7 @@ template config_file do
   owner OmnibusHelper.new(node).ownership['owner']
   group OmnibusHelper.new(node).ownership['group']
   mode '0644'
-  variables (lazy { elasticsearch.to_hash.merge(cluster_name: cluster_name) })
+  variables (lazy { elasticsearch.to_hash })
   force_unlink true
   notifies :restart, 'component_runit_service[elasticsearch]', :delayed
 end
@@ -99,6 +103,17 @@ template logging_config_file do
   force_unlink true
   notifies :restart, 'component_runit_service[elasticsearch]', :delayed
 end
+
+# If the user has configured a solr4 heap-size, we'll still honor it
+# if it is larger than our recommended.
+heap_size = if node['private_chef']['opscode-solr4'] &&
+               node['private_chef']['opscode-solr4']['heap_size'] &&
+               node['private_chef']['opscode-solr4']['heap_size'] > elasticsearch['heap_size']
+              node['private_chef']['opscode-solr4']['heap_size']
+            else
+              elasticsearch['heap_size']
+            end
+
 jvm_config_file = File.join(elasticsearch_conf_dir, 'jvm.options')
 template jvm_config_file do
   source 'elasticsearch_jvm.opts.erb'
@@ -107,7 +122,7 @@ template jvm_config_file do
   mode '0644'
   variables(jvm_opts: elasticsearch['jvm_opts'],
             log_dir: elasticsearch['log_diriectory'],
-            heap_size: elasticsearch['heap_size'],
+            heap_size: heap_size,
             new_size: elasticsearch['new_size'],
             enable_gc_log: elasticsearch['enable_gc_log'],
             tmp_dir: elasticsearch['temp_directory'])
@@ -137,5 +152,8 @@ link '/opt/opscode/embedded/elasticsearch/config' do
   to elasticsearch_conf_dir
 end
 
-# Define resource for elasticsearch component_runit_service
-component_runit_service 'elasticsearch'
+component_runit_service 'elasticsearch' do
+  action [:enable, :start]
+end
+
+include_recipe 'private-chef::elasticsearch_index'

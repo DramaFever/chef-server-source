@@ -10,7 +10,6 @@ directories:
   - ./src/oc_erchef
   - ./src/oc-id
   - ./src/openresty-noroot
-  - ./src/opscode-expander
 
 habitat:
   channel_for_origin:
@@ -75,6 +74,9 @@ fallbacks:
     - name: epgsql
       license_id: BSD-3-Clause
       license_content: https://github.com/chef/epgsql-1/blob/master/LICENSE
+    - name: erlcloud
+      license_id: BSD-2-Clause
+      license_content: https://github.com/chef/erlcloud/blob/master/COPYRIGHT
     - name: erlsom
       license_id: LGPL-3.0
       license_content: https://github.com/willemdj/erlsom/blob/master/COPYING
@@ -87,6 +89,9 @@ fallbacks:
     - name: jiffy
       license_id: MIT
       license_content: https://github.com/davisp/jiffy/blob/master/LICENSE
+    - name: lhttpc
+      license_id: BSD-3-Clause
+      license_content: https://github.com/erlcloud/lhttpc/blob/master/LICENCE
     - name: mochiweb
       license_id: MIT
       license_content: https://github.com/mochi/mochiweb/blob/master/LICENSE
@@ -163,6 +168,8 @@ exceptions:
     - name: core/attr
       reason: Exception made by Chef Legal
     - name: core/bash
+      reason: Exception made by Chef Legal
+    - name: core/binutils
       reason: Exception made by Chef Legal
     - name: core/busybox-static
       reason: Exception made by Chef Legal

@@ -48,13 +48,21 @@ build do
         ]
       )
     end
+    File.open("#{install_dir}/embedded/cookbooks/check-config.json", "w") do |f|
+      f.write FFI_Yajl::Encoder.encode(
+        run_list: [
+          'recipe[private-chef::config]'
+        ]
+      )
+    end
     File.open("#{install_dir}/embedded/cookbooks/post_upgrade_cleanup.json", "w") do |f|
       f.write FFI_Yajl::Encoder.encode(
         run_list: [
           'recipe[private-chef::post_11_upgrade_cleanup]',
           'recipe[private-chef::post_12_upgrade_cleanup]',
           'recipe[private-chef::solr4_gclog_cleanup]',
-          'recipe[private-chef::postgres_upgrade_cleanup]'
+          'recipe[private-chef::postgres_upgrade_cleanup]',
+          'recipe[private-chef::post_14_upgrade_cleanup]'
         ]
       )
     end

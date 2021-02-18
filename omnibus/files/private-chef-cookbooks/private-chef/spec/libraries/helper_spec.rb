@@ -85,6 +85,7 @@ describe OmnibusHelper do
     let(:node) do
       {
         'private_chef' => {
+          'elasticsearch' => {},
           'opscode-solr4' => {
             'external' => external,
             'external_url' => external_url,
@@ -117,8 +118,7 @@ describe OmnibusHelper do
     let(:client) { double(Chef::HTTP) }
 
     context 'when elastic search is disabled' do
-      let(:external) { false }
-      let(:external_url) { nil }
+      let(:provider) { 'solr' }
       let(:elastic_version) { '50.0' }
 
       it 'should return a default version 0' do

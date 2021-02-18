@@ -6,9 +6,11 @@ pkg_deps=(
   core/coreutils
   core/curl
   core/jq-static
-  core/ruby
-  core/bundler
+  core/ruby26
+  core/libffi
   core/postgresql-client
+  core/gcc-libs
+  core/glibc
 )
 pkg_build_deps=(
   core/glibc
@@ -54,6 +56,10 @@ do_build() {
 do_install() {
   export HOME="${pkg_prefix}"
   export RUBY_VENDOR="${pkg_prefix}/vendor/bundle"
+  mkdir -p "$RUBY_VENDOR"
+
+  export GEM_HOME="$RUBY_VENDOR"
+  gem install bundler:1.17.2
 
   # install oc-chef-pedant in its own directory under $pkg_prefix
   echo "====== BUILDING OC-CHEF-PEDANT ==== "
@@ -63,9 +69,6 @@ do_install() {
   fi
   cp -pr ${pedant_src_dir} ${pkg_prefix}
   export pedant_dir="${pkg_prefix}/oc-chef-pedant"
-
-  # TODO: declare chef gem dependency in oc-chef-pedant
-  cp Gemfile.local "${pedant_dir}/Gemfile.local"
 
   # in pedant dir bundle install
   pushd ${pedant_dir}
@@ -82,7 +85,7 @@ do_install() {
 
   cat > Gemfile << EOF
 source 'https://rubygems.org'
-gem 'chef', '~>14.5.0'
+gem 'chef', '~>15.12.22'
 gem 'knife-opc'
 EOF
 
@@ -110,6 +113,11 @@ EOF
   install $PLAN_CONTEXT/bin/oc-chef-pedant.sh $wrapper_bin_path/chef-server-test
   install $PLAN_CONTEXT/bin/knife-pivotal.sh $wrapper_bin_path/knife
   install $PLAN_CONTEXT/bin/chef-server-ctl.sh $wrapper_bin_path/chef-server-ctl
+
+  for i in chef-server-test knife chef-server-ctl; do
+      sed -i "s#__PKG_PATH__#${pkg_prefix}#" $wrapper_bin_path/$i
+      sed -i "s#__RUBY_PATH__#$(pkg_path_for core/ruby26)#" $wrapper_bin_path/$i
+  done
 }
 
 do_check() {

@@ -33,20 +33,6 @@ describe "running configs required by chef-server-ctl", :config do
     end
   end
 
-  context "migration 31" do
-    it "rabbitmq/user" do
-      expect(config["rabbitmq"]["user"].to_s).to_not eq('')
-    end
-
-    it "rabbitmq/actions_user" do
-      expect(config["rabbitmq"]["actions_user"].to_s).to_not eq('')
-    end
-
-    it "rabbitmq/management_user" do
-      expect(config["rabbitmq"]["management_user"].to_s).to_not eq('')
-    end
-  end
-
   context "password" do
     it "ldap/enabled" do
       expect(config["ldap"]["enabled"]).to be(true).or be(false).or be(nil)
@@ -102,6 +88,9 @@ describe "running configs required by chef-server-ctl", :config do
 
       if config["postgresql"]["external"]
         skip "not used for external postgresql"
+      # These tests should not run on the frontend of a tier setup.
+      elsif (Pedant::Config.topology == "tier" && Pedant::Config.role == "frontend")
+        skip "no postgresql installed on front-end of a tier server"
       else
         expect(File.exist?(config["postgresql"]["data_dir"])).to eq(true)
       end

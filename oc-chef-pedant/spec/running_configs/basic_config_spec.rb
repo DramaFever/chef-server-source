@@ -18,7 +18,6 @@ describe "running configs required by Chef Server and plugins", :config do
   end
 
   context "opscode-solr" do
-
     it "opscode-solr4/external" do
       expect(config['opscode-solr4']['external']).to be(true).or be(false)
     end
@@ -29,14 +28,6 @@ describe "running configs required by Chef Server and plugins", :config do
       else
         skip "not using external solr"
       end
-    end
-
-    it "opscode-solr4/vip" do
-      expect(config['opscode-solr4']['vip'].to_s).not_to eq ''
-    end
-
-    it "opscode-solr4/port" do
-      expect(config['opscode-solr4']['port'].to_i).not_to eq 0
     end
   end
 
@@ -72,6 +63,9 @@ describe "running configs required by Chef Server and plugins", :config do
     it "postgresql/data_dir" do
       if config['postgresql']['external']
         skip "not used for external postgresql"
+      # These tests should not run on the frontend of a tier setup.
+      elsif (Pedant::Config.topology == "tier" && Pedant::Config.role == "frontend")
+        skip "no postgresql installed on frontend of a tier install"
       else
         expect(File.exists?(config['postgresql']['data_dir'])).to be true
       end
@@ -79,17 +73,6 @@ describe "running configs required by Chef Server and plugins", :config do
 
     it "postgresql/username" do
       expect(config['postgresql']['username'].to_s).to_not eq ''
-    end
-  end
-
-  context "rabbitmq" do
-
-    it "user/username" do
-      expect(config['user']['username'].to_s).to_not eq ''
-    end
-
-    it "rabbitmq/actions_vhost" do
-      expect(config['rabbitmq']['actions_vhost'].to_s).to_not eq ''
     end
   end
 
@@ -160,6 +143,10 @@ describe "running configs required by Chef Server and plugins", :config do
 
     it "opscode-erchef/solr_http_max_connection_duration" do
       expect(config['opscode-erchef']['solr_http_max_connection_duration'].to_s).not_to eq ''
+    end
+
+    it "opscode-erchef/solr_retry_on_conn_closed" do
+      expect(config['opscode-erchef']['solr_retry_on_conn_closed'].to_s).not_to eq ''
     end
 
     it "opscode-erchef/solr_ibrowse_options" do

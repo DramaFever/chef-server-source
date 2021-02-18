@@ -19,6 +19,9 @@ class PreflightValidationFailed < StandardError
 end
 
 class PreflightValidator
+  CHEF_SERVER_NAME = "Chef Infra Server"
+  CHEF_SERVER_CONFIG_FILE = "/etc/opscode/chef-server.rb"
+
   attr_reader :node, :previous_run, :helper
   attr_reader :cs_pg_attr, :node_pg_attr
   def initialize(node)
@@ -141,10 +144,7 @@ class PreflightChecks
       PostgresqlPreflightValidator.new(node).run!
     end
     AuthPreflightValidator.new(node).run!
-    SolrPreflightValidator.new(node).run!
-    if PrivateChef['elasticsearch']['enable']
-      ElasticsearchPreflightValidator.new(node).run!
-    end
+    IndexingPreflightValidator.new(node).run!
     SslPreflightValidator.new(node).run!
     BookshelfPreflightValidator.new(node).run!
     RequiredRecipePreflightValidator.new(node).run!
