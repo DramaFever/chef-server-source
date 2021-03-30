@@ -2,8 +2,9 @@ source "https://rubygems.org"
 
 gemspec
 
-gem 'chef', git: 'https://github.com/chef/chef.git', branch: 'chef-15'
+gem 'chef', "= 15.16.2"
+gem 'chef-utils', "= 15.16.2" # mixlib-shellout currently floats on anything < 16.7.23
 gem "chef_backup"
-gem "omnibus-ctl", git: "https://github.com/chef/omnibus-ctl.git", tag: "v0.6.0"
+gem "omnibus-ctl"
 gem "veil", git: "https://github.com/chef/chef_secrets.git"
 gem "toml" # for habitat-land

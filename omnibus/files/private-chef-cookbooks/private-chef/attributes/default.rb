@@ -77,7 +77,7 @@ default['private_chef']['addons']['ubuntu_distribution'] =
 # The username for the chef services user
 default['private_chef']['user']['username'] = 'opscode'
 # The shell for the chef services user
-default['private_chef']['user']['shell'] = '/bin/sh'
+default['private_chef']['user']['shell'] = '/usr/sbin/nologin'
 # The home directory for the chef services user
 default['private_chef']['user']['home'] = '/opt/opscode/embedded'
 
@@ -173,6 +173,7 @@ elasticsearch['enable_gc_log'] = false
 elasticsearch['initial_cluster_join_timeout'] = 90
 elasticsearch['shard_count'] = 5
 elasticsearch['replica_count'] = 1
+#elasticsearch['es_version'] = '6.8.14'
 
 # each item in this list will be placed as-is into java_opts config file.
 # entries are set in chef-server.rb as
@@ -423,7 +424,6 @@ default['private_chef']['lb_internal']['enable'] = true
 default['private_chef']['lb_internal']['vip'] = '127.0.0.1'
 default['private_chef']['lb_internal']['chef_port'] = 9680
 default['private_chef']['lb_internal']['account_port'] = 9685
-default['private_chef']['lb_internal']['oc_bifrost_port'] = 9683
 default['private_chef']['lb']['redis_connection_timeout'] = 1000
 default['private_chef']['lb']['redis_keepalive_timeout'] = 2000
 default['private_chef']['lb']['redis_connection_pool_size'] = 250
@@ -475,7 +475,7 @@ default['private_chef']['nginx']['stub_status']['allow_list'] = ['127.0.0.1']
 # - AES added for pushy-server 1.x compatibility
 # - TLS1 and TLSv1.1 added for pushy-server 1.x compatibility
 #
-default['private_chef']['nginx']['ssl_protocols'] = 'TLSv1 TLSv1.1 TLSv1.2'
+default['private_chef']['nginx']['ssl_protocols'] = 'TLSv1.2'
 default['private_chef']['nginx']['ssl_ciphers'] = 'ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA256:AES256-GCM-SHA384:AES:!aNULL:!eNULL:!EXPORT'
 #
 # The SSL Certificate and DH Param will be automatically generated if
@@ -517,6 +517,8 @@ default['private_chef']['nginx']['show_welcome_page'] = true
 
 # Set to a path to a CA certificate to enable mutual TLS checking of the client SSL/TLS certificate
 default['private_chef']['nginx']['ssl_client_ca'] = false
+default['private_chef']['nginx']['pivotal_ssl_client_cert'] = false
+default['private_chef']['nginx']['pivotal_ssl_client_key'] = false
 # default['private_chef']['nginx']['ssl_client_ca'] = "/etc/something/foo.ca.pem"
 default['private_chef']['nginx']['ssl_verify_depth'] = 2
 
