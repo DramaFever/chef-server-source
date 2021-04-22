@@ -1,16 +1,39 @@
 # Chef Server Changelog
 <!-- usage documentation: http://expeditor-docs.es.chef.io/configuration/changelog/ -->
-<!-- latest_release 14.2.18 -->
-## [14.2.18](https://github.com/chef/chef-server/tree/14.2.18) (2021-03-30)
+<!-- latest_release 14.3.14 -->
+## [14.3.14](https://github.com/chef/chef-server/tree/14.3.14) (2021-04-22)
 
 #### Merged Pull Requests
-- Bump omnibus-software from `f6aa2ed` to `142e76b` in /omnibus [#2381](https://github.com/chef/chef-server/pull/2381) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot]))
+- Adding HSTS docs [#2445](https://github.com/chef/chef-server/pull/2445) ([vinay-satish](https://github.com/vinay-satish))
 <!-- latest_release -->
 
 <!-- release_rollup since=14.2.2 -->
 ### Changes since 14.2.2 release
 
 #### Merged Pull Requests
+- Adding HSTS docs [#2445](https://github.com/chef/chef-server/pull/2445) ([vinay-satish](https://github.com/vinay-satish)) <!-- 14.3.14 -->
+- Add Content-Security-Policy and X-Frame-Options headers to our static content [#2407](https://github.com/chef/chef-server/pull/2407) ([tas50](https://github.com/tas50)) <!-- 14.3.13 -->
+-  Move chef-fixie and knife-ec-backup to chef-server-ctl deps  [#2442](https://github.com/chef/chef-server/pull/2442) ([tas50](https://github.com/tas50)) <!-- 14.3.12 -->
+- Remove duplicate knife-opc omnibus definition [#2440](https://github.com/chef/chef-server/pull/2440) ([tas50](https://github.com/tas50)) <!-- 14.3.11 -->
+- Use the current version of berkshelf [#2436](https://github.com/chef/chef-server/pull/2436) ([tas50](https://github.com/tas50)) <!-- 14.3.10 -->
+- Add a configuration option to set the max-age of HSTS [#2362](https://github.com/chef/chef-server/pull/2362) ([vinay-satish](https://github.com/vinay-satish)) <!-- 14.3.9 -->
+- Avoid duplicate chef_backup and veil definitions [#2435](https://github.com/chef/chef-server/pull/2435) ([tas50](https://github.com/tas50)) <!-- 14.3.8 -->
+- Update postresql from 9.6.15 to 9.6.21 [#2438](https://github.com/chef/chef-server/pull/2438) ([tas50](https://github.com/tas50)) <!-- 14.3.7 -->
+- Update to enterprise-chef-common 1.0 cookbook [#2437](https://github.com/chef/chef-server/pull/2437) ([tas50](https://github.com/tas50)) <!-- 14.3.6 -->
+- Remove bundler/rubygems omnibus defs [#2428](https://github.com/chef/chef-server/pull/2428) ([tas50](https://github.com/tas50)) <!-- 14.3.5 -->
+- Update Chef to 15.17.4 and Ruby to 2.6.7 [#2427](https://github.com/chef/chef-server/pull/2427) ([tas50](https://github.com/tas50)) <!-- 14.3.4 -->
+- Update RELEASE_PROCESS.md to include integration pipeline testing. [#1968](https://github.com/chef/chef-server/pull/1968) ([lbakerchef](https://github.com/lbakerchef)) <!-- 14.3.3 -->
+- Update our TLS configuration docs [#2414](https://github.com/chef/chef-server/pull/2414) ([tas50](https://github.com/tas50)) <!-- 14.3.2 -->
+- Providing a server to download the rock from. [#2413](https://github.com/chef/chef-server/pull/2413) ([PrajaktaPurohit](https://github.com/PrajaktaPurohit)) <!-- 14.3.2 -->
+- Bump chef from 16.12.3 to 16.13.16 in /oc-chef-pedant [#2409](https://github.com/chef/chef-server/pull/2409) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.3.1 -->
+- Remove support for Ubuntu 16.04 + add Ubuntu FIPS [#2408](https://github.com/chef/chef-server/pull/2408) ([tas50](https://github.com/tas50)) <!-- 14.3.0 -->
+- Bump ffi-yajl from 2.3.4 to 2.4.0 in /src/chef-server-ctl [#2402](https://github.com/chef/chef-server/pull/2402) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.25 -->
+- WIP Update Erlang Deps (rebar3) [#2289](https://github.com/chef/chef-server/pull/2289) ([lbakerchef](https://github.com/lbakerchef)) <!-- 14.2.24 -->
+- Bump chef from 16.11.7 to 16.12.3 in /oc-chef-pedant [#2391](https://github.com/chef/chef-server/pull/2391) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.23 -->
+- Bump omnibus-software from `a0e7438` to `f745eed` in /omnibus [#2394](https://github.com/chef/chef-server/pull/2394) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.22 -->
+- Added disk space warning if not enough for ES reindex [#2333](https://github.com/chef/chef-server/pull/2333) ([jashaik](https://github.com/jashaik)) <!-- 14.2.21 -->
+- Bump omnibus-software from `142e76b` to `a0e7438` in /omnibus [#2386](https://github.com/chef/chef-server/pull/2386) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.20 -->
+- Update openresty to 1.19.3.1 [#2382](https://github.com/chef/chef-server/pull/2382) ([jashaik](https://github.com/jashaik)) <!-- 14.2.19 -->
 - Bump omnibus-software from `f6aa2ed` to `142e76b` in /omnibus [#2381](https://github.com/chef/chef-server/pull/2381) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.18 -->
 - Bump chef from 15.16.2 to 16.11.7 in /oc-chef-pedant [#2371](https://github.com/chef/chef-server/pull/2371) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.17 -->
 - Bump activesupport from 6.1.3 to 6.1.3.1 in /src/oc_bifrost/oc-bifrost-pedant [#2375](https://github.com/chef/chef-server/pull/2375) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 14.2.16 -->

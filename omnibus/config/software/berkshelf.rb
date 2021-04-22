@@ -1,12 +1,11 @@
 #
-# Copyright:: Copyright (c) 2016 Chef Software, Inc.
-# License:: Apache License, Version 2.0
+# Copyright 2017-2021 Chef Software, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,21 +13,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-name 'chef_backup-gem'
-default_version 'master'
-source git: "https://github.com/chef/chef_backup.git"
 
-license "Apache-2.0"
-license_file "https://github.com/chef/chef_backup/blob/master/LICENSE"
+name "berkshelf"
+default_version "master"
 
-dependency 'ruby'
-dependency 'rubygems'
+license "Apache"
+license_file "https://github.com/berkshelf/berkshelf/blob/master/LICENSE"
+
+source git: "https://github.com/berkshelf/berkshelf.git"
+
+dependency "ruby"
 
 build do
   env = with_standard_compiler_flags(with_embedded_path)
 
-  bundle "install --without development", env: env
+  bundle "install --without development changelog build docs", env: env
 
-  gem "build chef_backup.gemspec", env: env
-  gem "install chef_backup*.gem -n #{install_dir}/embedded/bin --no-document", env: env
+  gem "build berkshelf.gemspec", env: env
+  gem "install berkshelf-*.gem", env: env
 end
